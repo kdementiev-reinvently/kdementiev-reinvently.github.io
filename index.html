@@ -9,7 +9,7 @@
 		<div id="container"></div>
 
 		<video id="video" loop muted crossOrigin="anonymous" webkit-playsinline style="display:none">
-			<source src="https://assets.cameraiq.co/webpreview/webpreview2_small_0.5.mp4">
+			<source src="https://kdementiev-reinvently.github.io/video.mp4">
 		</video>
 
 		<script type="module">
@@ -99,25 +99,29 @@
 
 			function load() {
 				var loader = new GLTFLoader();
-					loader.load( 'file:///Users/kdementiev/Desktop/face-scene.glb', function ( gltf ) {
+					loader.load( 'https://kdementiev-reinvently.github.io/face-scene.glb', function ( gltf ) {
 						model = gltf.scene;
+
+						var planeMesh = model.children[0];
+						var material = planeMesh.material
 
 						scene.add( model );
 
 						var scaling = 15.0;
-				
+
 						model.scale.set(scaling,scaling,-scaling);
-						model.position.set(0, -10, scaling);
 
-						mixer = new THREE.AnimationMixer( model );
+						// model.position.set(0, -10, scaling);
 
-						animation = gltf.animations[1];
+						// mixer = new THREE.AnimationMixer( model );
 
-						action = mixer.clipAction(animation);
+						// animation = gltf.animations[1];
 
-						action.clampWhenFinished = true;
-						action.loop = THREE.LoopRepeat;
-						action.play();
+						// action = mixer.clipAction(animation);
+
+						// action.clampWhenFinished = true;
+						// action.loop = THREE.LoopRepeat;
+						// action.play();
 
 						// createGUI( model, gltf.animations );
 					}, undefined, function ( e ) {
