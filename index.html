@@ -6,10 +6,13 @@
 	<body style="margin-top: 0; margin-left: 0;">
 
 		<div id="container"></div>
+		<div id="videoTime">Video time: </div>
+		<div id="animationTime">Animation time: </div>
 
-		<video id="video" loop muted crossOrigin="anonymous" webkit-playsinline style="display:none">
-			<source src="https://assets.cameraiq.co/webpreview/webpreview2_small_0.5.mp4">
+		<video id="video" loop muted crossOrigin="anonymous" style="display:none">
+			<source src="https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/video.mp4">
 		</video>
+
 
 		<script type="module">
 
@@ -22,23 +25,14 @@
 
 			var videoContainer;
 
-			var model;
-			var mixer;
-			var clock;
-			var animation;
+			var videoTimeContainer, animationTimeContainer;
+			var model, mixer, clock, animation;
 
-			var isUserInteracting = false,
-				lon = 90, lat = 0,
+			var lon = 90, lat = 0,
 				phi = 0, theta = 0,
-				distance = 50,
-				onPointerDownPointerX = 0,
-				onPointerDownPointerY = 0,
-				onPointerDownLon = 0,
-				onPointerDownLat = 0;
+				distance = 50;
 
-			var stats;
-
-			var action;
+			var stats, action;
 
 			init();
 			animate();
@@ -47,41 +41,26 @@
 
 				clock = new THREE.Clock();
 
-				var innerWidth = 256;
-				var innerHeight = 512;
+                let innerWidth = 256;
+                let innerHeight = 512;
 
-				var container, mesh;
+                var container;
 
 				container = document.getElementById( 'container' );
+
+                videoTimeContainer = document.getElementById( 'videoTime' );
+                animationTimeContainer = document.getElementById( 'animationTime' );
 
 				camera = new THREE.PerspectiveCamera( 55, innerWidth / innerHeight, 1, 50 );
 				camera.target = new THREE.Vector3( 0, 0, 0 );
 
 				scene = new THREE.Scene();
 
-				var geometry = new THREE.PlaneBufferGeometry(49, 49, 2);
-
-				// var geometry = new THREE.SphereBufferGeometry( 500, 60, 40 );
-				// invert the geometry on the x-axis so that all of the faces point inward
-				geometry.scale( 1, 1, 1 );
-
-
-				var video = document.getElementById( 'video' );
-				video.play();
-
-				videoContainer = video
-
-				var texture = new THREE.VideoTexture( video );
-				var material = new THREE.MeshBasicMaterial( { map: texture } );
-
-				mesh = new THREE.Mesh( geometry, material );
-				scene.add( mesh );
-
-				mesh.position.set(12,0,0);
+                videoContainer = document.getElementById( 'video' );
+                videoContainer.play();
 
 				var light = new THREE.AmbientLight( 0xffffff, 3 ); // soft white light
 				scene.add( light );
-
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
@@ -92,11 +71,63 @@
 				stats = new Stats();
 				container.appendChild( stats.dom );
 
-				load();
+                loadSampleModel();
+
+                loadPreviewResources();
+			}
+
+			function initializeBackgroundPlane(vertexShader, framgentShader) {
+
+                let backImageURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/background.png";
+                let frameImageURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/frame.png";
+
+                let geometry = new THREE.PlaneBufferGeometry(26, 52, 2);
+                geometry.scale( 1, 1, 1 );
+
+                let texture = new THREE.VideoTexture( videoContainer );
+                let backgroundTexture = new THREE.TextureLoader().load( backImageURL );
+                let frameTexture = new THREE.TextureLoader().load( frameImageURL );
+
+                let uniforms = {
+                    "slope" : { value: 0.2 },
+                    "discardEdge" : { value: 0.675 },
+                    "keyColor" : { value: new THREE.Vector4( 0.1843, 1.0, 0.098, 1.0 ) },
+                    "backgroundTexture": { value: backgroundTexture },
+                    "colorTexture": { value: texture },
+					"frameTexture": { value: frameTexture },
+                };
+
+                let chromaKeyMaterial = new THREE.ShaderMaterial( {
+                    uniforms: uniforms,
+                    vertexShader: vertexShader,
+                    fragmentShader: framgentShader
+                } );
+
+                let mesh = new THREE.Mesh( geometry, chromaKeyMaterial );
+                mesh.position.set(0, 0, 0);
+                scene.add( mesh );
+			}
+
+
+			var vertexShader, fragmentShader;
+
+			function loadPreviewResources() {
+
+                let vertextShaderURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/preview-compose.vert";
+                let framgentShaderURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/preview-compose.frag";
+
+                new THREE.FileLoader().load(vertextShaderURL, function ( data ) { vertexShader = data; checkPreviewShadersState() });
+                new THREE.FileLoader().load(framgentShaderURL, function ( data ) { fragmentShader = data; checkPreviewShadersState() });
 
 			}
 
-			function load() {
+			function checkPreviewShadersState() {
+				if (vertexShader != null && fragmentShader != null) {
+				    initializeBackgroundPlane(vertexShader, fragmentShader)
+				}
+			}
+
+			function loadSampleModel() {
 				var loader = new GLTFLoader();
 					loader.load( 'https://threejs.org/examples/models/gltf/Soldier.glb', function ( gltf ) {
 						model = gltf.scene;
@@ -104,9 +135,10 @@
 						scene.add( model );
 
 						var scaling = 15.0;
-				
+
+						model.rotation.set(0, 1.57, 0);
 						model.scale.set(scaling,scaling,-scaling);
-						model.position.set(0, -10, scaling);
+						model.position.set(0, -18, scaling);
 
 						mixer = new THREE.AnimationMixer( model );
 
@@ -118,7 +150,6 @@
 						action.loop = THREE.LoopRepeat;
 						action.play();
 
-						// createGUI( model, gltf.animations );
 					}, undefined, function ( e ) {
 						console.error( e );
 					} );
@@ -128,16 +159,15 @@
 
 				stats.update();
 
-				var dt = clock.getDelta();
-				// if ( mixer ) mixer.update( dt );
-
-				var videoTime = videoContainer.currentTime / videoContainer.duration;
-				if ( mixer ) { 
-					
-					var resultTime = videoTime * 0.5 * animation.duration;
-					action.time = resultTime;
+				let videoTime = videoContainer.currentTime / videoContainer.duration;
+				if ( mixer ) {
+					action.time = videoTime * animation.duration;
 					mixer.update(0);
+                    document.getElementById( 'animationTime' ).innerText = "Animation time: " + action.time.toFixed(2) + " / " + animation.duration.toFixed(2);
 				}
+
+                document.getElementById( 'videoTime' ).innerText = "Video time: " + videoContainer.currentTime.toFixed(2) + " / " + videoContainer.duration.toFixed(2);
+
 
 				requestAnimationFrame( animate );
 
