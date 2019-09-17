@@ -25,7 +25,7 @@ void main( void ) {
 
 	vec3 background = backColor * inversedTonemap;
 	vec3 video = color * tonemap;
-	vec3 composedColor = (background + video) * frameColor.a
+	vec3 composedColor = ((background + video) * (1.0 - frameColor.a)) + (frameColor.rgb * frameColor.a);
 
 	gl_FragColor = vec4( composedColor , 1.0 );
 }
