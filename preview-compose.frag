@@ -4,12 +4,14 @@ uniform vec4 keyColor;
 
 uniform sampler2D colorTexture;
 uniform sampler2D backgroundTexture;
+uniform sampler2D frameTexture;
 
 varying vec2 vUv;
 
 void main( void ) {
 
 	// Prepare textures
+	vec4 frameColor = texture2D( frameTexture, vUv ).rgba;
 	vec3 backColor = texture2D( backgroundTexture, vUv ).rgb;
 	vec3 color = texture2D( colorTexture, vUv ).rgb;
 
@@ -23,6 +25,7 @@ void main( void ) {
 
 	vec3 background = backColor * inversedTonemap;
 	vec3 video = color * tonemap;
+	vec3 composedColor = (background + video) * frameColor.a
 
-	gl_FragColor = vec4( background + video , 1.0 );
+	gl_FragColor = vec4( composedColor , 1.0 );
 }
