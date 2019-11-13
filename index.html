@@ -5,6 +5,8 @@
 	</head>
 	<body style="margin-top: 0; margin-left: 0;">
 
+		<!--<img id="gifContainer" width="128px" src="file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/coffee_cup.gif">-->
+
 		<div id="container"></div>
 		<div id="videoTime">Video time: </div>
 		<div id="animationTime">Animation time: </div>
@@ -12,6 +14,8 @@
 		<video id="video" loop muted crossOrigin="anonymous" webkit-playsinline style="display:none">
 			<source src="https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/video.mp4">
 		</video>
+
+        <img width="128px" height="257px" id="gifContainer" src="file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/underwater_background_v4.gif" style="display: none">
 
 
 		<script type="module">
@@ -76,6 +80,9 @@
                 loadPreviewResources();
 			}
 
+			var gifTexture;
+			var gifContainer;
+
 			function initializeBackgroundPlane(vertexShader, framgentShader) {
 
                 let backImageURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/background.png";
@@ -88,11 +95,14 @@
                 let backgroundTexture = new THREE.TextureLoader().load( backImageURL );
                 let frameTexture = new THREE.TextureLoader().load( frameImageURL );
 
+                gifContainer = document.getElementById("gifContainer");
+                gifTexture = new THREE.Texture( gifContainer );
+
                 let uniforms = {
                     "slope" : { value: 0.2 },
                     "discardEdge" : { value: 0.675 },
                     "keyColor" : { value: new THREE.Vector4( 0.1843, 1.0, 0.098, 1.0 ) },
-                    "backgroundTexture": { value: backgroundTexture },
+                    "backgroundTexture": { value: gifTexture },
                     "colorTexture": { value: texture },
 					"frameTexture": { value: frameTexture },
                 };
@@ -121,9 +131,34 @@
 
 			}
 
+            // var gifTexture;
+            var imageElement;
+
 			function checkPreviewShadersState() {
 				if (vertexShader != null && fragmentShader != null) {
-				    initializeBackgroundPlane(vertexShader, fragmentShader)
+                    initializeBackgroundPlane(vertexShader, fragmentShader);
+
+                    // new THREE.TextureLoader().load("file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/coffee_cup.gif",
+                    //     function ( texture ) {
+                    //         gifTexture = texture;
+                    //         // gifTexture.needsUpdate = true;
+                    //
+                    //         initializeBackgroundPlane(vertexShader, fragmentShader)
+                    //
+                    //         // console.log(texture);
+                    //     });
+
+                    // imageElement = document.createElement('img');
+                    // imageElement.onload = function(e) {
+                    //
+                    //     // gifTexture = new THREE.Texture( this );
+                    //     // gifTexture.needsUpdate = true;
+                    //
+                    //     initializeBackgroundPlane(vertexShader, fragmentShader)
+                    // };
+                    //
+                    // imageElement.src = "file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/coffee_cup.gif";
+
 				}
 			}
 
@@ -172,6 +207,14 @@
 				requestAnimationFrame( animate );
 
 				update();
+
+                if (gifTexture) {
+                    gifTexture.needsUpdate = true;
+
+                    // let ext2 = gifContainer.getAttribute('data-animation');
+                    // console.log(ext2);
+                }
+
 
 			}
 
