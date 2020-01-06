@@ -1,0 +1,239 @@
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	</head>
+	<body style="margin-top: 0; margin-left: 0;">
+
+		<!--<img id="gifContainer" width="128px" src="file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/coffee_cup.gif">-->
+
+		<div id="container"></div>
+		<div id="videoTime">Video time: </div>
+		<div id="animationTime">Animation time: </div>
+
+		<video id="video" loop muted crossOrigin="anonymous" webkit-playsinline style="display:none">
+			<source src="https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/video.mp4">
+		</video>
+
+        <img width="128px" height="257px" id="gifContainer" src="file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/underwater_background_v4.gif" style="display: none">
+
+
+		<script type="module">
+
+			import * as THREE from 'https://threejs.org/build/three.module.js';
+
+			import Stats from 'https://threejs.org/examples/jsm/libs/stats.module.js';
+			import { GLTFLoader } from 'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
+
+			var camera, scene, renderer;
+
+			var videoContainer;
+
+			var videoTimeContainer, animationTimeContainer;
+			var model, mixer, clock, animation;
+
+			var lon = 90, lat = 0,
+				phi = 0, theta = 0,
+				distance = 50;
+
+			var stats, action;
+
+			init();
+			animate();
+
+			function init() {
+
+				clock = new THREE.Clock();
+
+                let innerWidth = 256;
+                let innerHeight = 512;
+
+                var container;
+
+				container = document.getElementById( 'container' );
+
+                videoTimeContainer = document.getElementById( 'videoTime' );
+                animationTimeContainer = document.getElementById( 'animationTime' );
+
+				camera = new THREE.PerspectiveCamera( 55, innerWidth / innerHeight, 1, 50 );
+				camera.target = new THREE.Vector3( 0, 0, 0 );
+
+				scene = new THREE.Scene();
+
+                videoContainer = document.getElementById( 'video' );
+                videoContainer.play();
+
+				var light = new THREE.AmbientLight( 0xffffff, 3 ); // soft white light
+				scene.add( light );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( innerWidth, innerHeight );
+				container.appendChild( renderer.domElement );
+
+				// stats
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+                loadSampleModel();
+
+                loadPreviewResources();
+			}
+
+			var gifTexture;
+			var gifContainer;
+
+			function initializeBackgroundPlane(vertexShader, framgentShader) {
+
+                let backImageURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/background.png";
+                let frameImageURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/frame.png";
+
+                let geometry = new THREE.PlaneBufferGeometry(26, 52, 2);
+                geometry.scale( 1, 1, 1 );
+
+                let texture = new THREE.VideoTexture( videoContainer );
+                let backgroundTexture = new THREE.TextureLoader().load( backImageURL );
+                let frameTexture = new THREE.TextureLoader().load( frameImageURL );
+
+                gifContainer = document.getElementById("gifContainer");
+                gifTexture = new THREE.Texture( gifContainer );
+
+                let uniforms = {
+                    "slope" : { value: 0.2 },
+                    "discardEdge" : { value: 0.675 },
+                    "keyColor" : { value: new THREE.Vector4( 0.1843, 1.0, 0.098, 1.0 ) },
+                    "backgroundTexture": { value: gifTexture },
+                    "colorTexture": { value: texture },
+					"frameTexture": { value: frameTexture },
+                };
+
+                let chromaKeyMaterial = new THREE.ShaderMaterial( {
+                    uniforms: uniforms,
+                    vertexShader: vertexShader,
+                    fragmentShader: framgentShader
+                } );
+
+                let mesh = new THREE.Mesh( geometry, chromaKeyMaterial );
+                mesh.position.set(0, 0, 0);
+                scene.add( mesh );
+			}
+
+
+			var vertexShader, fragmentShader;
+
+			function loadPreviewResources() {
+
+                let vertextShaderURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/preview-compose.vert";
+                let framgentShaderURL = "https://raw.githubusercontent.com/kdementiev-reinvently/kdementiev-reinvently.github.io/master/preview-compose.frag";
+
+                new THREE.FileLoader().load(vertextShaderURL, function ( data ) { vertexShader = data; checkPreviewShadersState() });
+                new THREE.FileLoader().load(framgentShaderURL, function ( data ) { fragmentShader = data; checkPreviewShadersState() });
+
+			}
+
+            // var gifTexture;
+            var imageElement;
+
+			function checkPreviewShadersState() {
+				if (vertexShader != null && fragmentShader != null) {
+                    initializeBackgroundPlane(vertexShader, fragmentShader);
+
+                    // new THREE.TextureLoader().load("file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/coffee_cup.gif",
+                    //     function ( texture ) {
+                    //         gifTexture = texture;
+                    //         // gifTexture.needsUpdate = true;
+                    //
+                    //         initializeBackgroundPlane(vertexShader, fragmentShader)
+                    //
+                    //         // console.log(texture);
+                    //     });
+
+                    // imageElement = document.createElement('img');
+                    // imageElement.onload = function(e) {
+                    //
+                    //     // gifTexture = new THREE.Texture( this );
+                    //     // gifTexture.needsUpdate = true;
+                    //
+                    //     initializeBackgroundPlane(vertexShader, fragmentShader)
+                    // };
+                    //
+                    // imageElement.src = "file:///Users/kdementiev/Documents/GitHub/kdementiev-reinvently.github.io/coffee_cup.gif";
+
+				}
+			}
+
+			function loadSampleModel() {
+				var loader = new GLTFLoader();
+					loader.load( 'https://threejs.org/examples/models/gltf/Soldier.glb', function ( gltf ) {
+						model = gltf.scene;
+
+						scene.add( model );
+
+						var scaling = 15.0;
+
+						model.rotation.set(0, 1.57, 0);
+						model.scale.set(scaling,scaling,-scaling);
+						model.position.set(0, -18, scaling);
+
+						mixer = new THREE.AnimationMixer( model );
+
+						animation = gltf.animations[1];
+
+						action = mixer.clipAction(animation);
+
+						action.clampWhenFinished = true;
+						action.loop = THREE.LoopRepeat;
+						action.play();
+
+					}, undefined, function ( e ) {
+						console.error( e );
+					} );
+			}
+
+			function animate() {
+
+				stats.update();
+
+				let videoTime = videoContainer.currentTime / videoContainer.duration;
+				if ( mixer ) {
+					action.time = videoTime * animation.duration;
+					mixer.update(0);
+                    document.getElementById( 'animationTime' ).innerText = "Animation time: " + action.time.toFixed(2) + " / " + animation.duration.toFixed(2);
+				}
+
+                document.getElementById( 'videoTime' ).innerText = "Video time: " + videoContainer.currentTime.toFixed(2) + " / " + videoContainer.duration.toFixed(2);
+
+
+				requestAnimationFrame( animate );
+
+				update();
+
+                if (gifTexture) {
+                    gifTexture.needsUpdate = true;
+
+                    // let ext2 = gifContainer.getAttribute('data-animation');
+                    // console.log(ext2);
+                }
+
+
+			}
+
+			function update() {
+
+				lat = Math.max( - 85, Math.min( 85, lat ) );
+				phi = THREE.Math.degToRad( 90 - lat );
+				theta = THREE.Math.degToRad( lon );
+
+				camera.position.x = distance * Math.sin( phi ) * Math.cos( theta );
+				camera.position.y = distance * Math.cos( phi );
+				camera.position.z = distance * Math.sin( phi ) * Math.sin( theta );
+
+				camera.lookAt( camera.target );
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
