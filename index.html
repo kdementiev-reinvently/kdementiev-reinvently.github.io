@@ -13,100 +13,205 @@
 		<div id="video-preview-container" style="width: 276px; height: 491px;"></div>
 		<div id="layout-buttons-container" style="display: inline-flex;">
 
-			<!-- <fieldset>
-				<legend>Preview Size</legend>
-				w: <input type="number" id="width" min="276" max="768" value="276"><br>
-				h: <input type="number" id="height" min="491" max="1366" value="491">
-			</fieldset> -->
-
 			<fieldset>
 				<legend>Image Position</legend>
-				x: <input type="range" min="-100" max="100" value="0" id="position-x" oninput="updatePosition()"><br>
-				y: <input type="range" min="-100" max="100" value="0" id="position-y" oninput="updatePosition()"><br>
-				z: <input type="range" min="0" max="100" value="51" id="position-z" oninput="updateZ(this)"><br>
-				<button style="padding: 4px; margin-top: 10px; margin-left: 0px;" onclick="resetPosition()">Reset to Center</button>
+				s: <input type="range" min="0" max="3" value="1" step="0.01" id="position-x" oninput="updatePosition()"><br>
+				<!-- y: <input type="range" min="-100" max="100" value="0" id="position-y" oninput="updatePosition()"><br> -->
+				r: <input type="range" min="-180" max="180" value="0" id="position-z" oninput="updateZ(this)"><br>
+				<button style="padding: 4px; margin-top: 10px; margin-left: 0px;" onclick="resetPosition()">Reset</button>
 			</fieldset>
 
 			<fieldset>
-				<legend>Alignment</legend>
-				<div><input type="checkbox" name="align" id="Top" onchange="updateAlignment()"><label for="top"> Top</label></div>
+        <legend>Alignment</legend>
+        
+        <div style="display: flex;">
+          <div><input type="radio" name="align" id="TL" onchange="updateAlignment(this)"><label></label></div>
+          <div><input type="radio" name="align" id="T" onchange="updateAlignment(this)"><label></label></div>
+          <div><input type="radio" name="align" id="TR" onchange="updateAlignment(this)"><label></label></div>
+        </div>
+
+        <div style="display: flex;">
+          <div><input type="radio" name="align" id="ML" onchange="updateAlignment(this)"><label></label></div>
+          <div><input type="radio" name="align" id="M" onchange="updateAlignment(this)" checked><label></label></div>
+          <div><input type="radio" name="align" id="MR" onchange="updateAlignment(this)"><label></label></div>
+        </div>
+
+        <div style="display: flex;">
+          <div><input type="radio" name="align" id="BL" onchange="updateAlignment(this)"><label></label></div>
+          <div><input type="radio" name="align" id="B" onchange="updateAlignment(this)"><label></label></div>
+          <div><input type="radio" name="align" id="BR" onchange="updateAlignment(this)"><label></label></div>
+        </div>
+
+				<!-- <div><input type="checkbox" name="align" id="Top" onchange="updateAlignment()"><label for="top"> Top</label></div>
 				<div><input type="checkbox" name="align" id="Bottom" onchange="updateAlignment()"><label for="bottom"> Bottom</label></div>
 				<div><input type="checkbox" name="align" id="Left" onchange="updateAlignment()"><label for="left"> Left</label></div>
-				<div><input type="checkbox" name="align" id="Right" onchange="updateAlignment()"><label for="right"> Right</label></div>
+				<div><input type="checkbox" name="align" id="Right" onchange="updateAlignment()"><label for="right"> Right</label></div> -->
 			</fieldset>
 
 			<fieldset>
+				<legend>Offset</legend>
+				x: <input style="width: 48px;" type="number" id="offsetx" value="0" step="0.01" onchange="updateOffset(this)"><br>
+				y: <input style="width: 48px;" type="number" id="offsety" value="0" step="0.01" onchange="updateOffset(this)">
+      </fieldset>
+      
+			<fieldset>
 				<legend>Fixed axis</legend>
-				<div><input type="checkbox" name="align" id="Width" onchange="updateAlignment()" checked><label for="Width"> Width</label></div>
-				<div><input type="checkbox" name="align" id="Height" onchange="updateAlignment()" checked><label for="Height"> Height</label></div>
+				<div><input type="checkbox" name="fill" id="width" onchange="updateFill(this)"><label for="Width"> Fill Width</label></div>
+				<div><input type="checkbox" name="fill" id="height" onchange="updateFill(this)"><label for="Height"> Fill Height</label></div>
 			</fieldset>
 		</div>
 
-        <script src="./dist/index.js"></script>
+        <script src="./index.js"></script>
         <script>
 
 			// Initialize component.
 			let container = document.getElementById("video-preview-container");
-			let preview = new VideoPreview.Component(container);
-
+			let preview = new VideoPreview.Preview(container);
+			
 			// Initialize scene.
-			let scene = createFaceTrackingScene("girl")
+			let scene = createFaceTrackingScene("base")
 			preview.setCurrentScene(scene)
-
-			// Apply background image.
-			let background = new VideoPreview.ImageScreenComponent("/static/image/background-wall.jpg")
-			background.zOrder = 0
-			background.updateConstraints([VideoPreview.Constraint.Top, VideoPreview.Constraint.Bottom, VideoPreview.Constraint.Width])
-			scene.addScreenComponent(background)
 
 			// Create image for manipulation.
 			let image = new VideoPreview.ImageScreenComponent("/static/image/tv-table.jpg")
 			image.zOrder = 51
-			scene.addScreenComponent(image)
-
+      scene.addScreenComponent(image)
 
 			function createFaceTrackingScene(key) {
-				let sceneData = new VideoPreview.SceneData()
-				sceneData.videoPath = "/static/" + key + "/face-static.mp4"
-				return new VideoPreview.FaceTrackingScene(sceneData)
-			}
+				let sceneData = new VideoPreview.VideoSceneData()
+				sceneData.videoPath = "/static/scenes/" + key + "/static.mp4"
+				return new VideoPreview.HeadScene(sceneData)
+      }
+      
+      const alignMap = {
+        "TL": [VideoPreview.Constraint.Top, VideoPreview.Constraint.Left],
+        "T": [VideoPreview.Constraint.Top],
+        "TR": [VideoPreview.Constraint.Top, VideoPreview.Constraint.Right],
+        "ML": [VideoPreview.Constraint.Left],
+        "M": [],
+        "MR": [VideoPreview.Constraint.Right],
+        "BL": [VideoPreview.Constraint.Bottom, VideoPreview.Constraint.Left],
+        "B": [VideoPreview.Constraint.Bottom],
+        "BR": [VideoPreview.Constraint.Bottom, VideoPreview.Constraint.Right],
+      }
 
-			function updateAlignment() {
+      const fillMap = {
+        "width": [VideoPreview.Constraint.Left, VideoPreview.Constraint.Right],
+        "height": [VideoPreview.Constraint.Top, VideoPreview.Constraint.Bottom]
+      }
 
-				let constraints = []
+      const enableMap = {
+        "width": ["T", "M", "B"],
+        "height": ["ML", "M", "MR"]
+      }
 
-				let elements = document.getElementsByName("align")
-				for (var i = 0; i < elements.length; i++) {
-					let element = elements[i]
-					if (element.checked) {
-						constraints.push(VideoPreview.Constraint[element.id])
-					}
-				}
+      var currentFill = []
 
-				image.updateConstraints(constraints)
+      function updateOffset() {
+        const offsetx = document.getElementById("offsetx")
+        const offsety = document.getElementById("offsety")
+
+        var pos = image.position
+        pos.x = parseFloat(offsetx.value)
+        pos.y = parseFloat(offsety.value)
+        image.position = pos
+      }
+
+      function updateFill(selectedElement) {
+
+        currentFill = []
+
+        const elements = document.getElementsByName("fill")
+        for (var i = 0; i < elements.length; i++) {
+          let element = elements[i]
+          if (element.checked) {
+            currentFill = currentFill.concat(fillMap[element.id])
+          }
+        }
+
+        updateAlignSelector()
+        updateAlignment()
+        updateOffset()
+      }
+
+			function updateAlignment(element) {
+      
+        let constraints = []
+        constraints = constraints.concat(currentFill)
+
+        const elements = document.getElementsByName("align")
+        for (var i = 0; i < elements.length; i++) {
+          let element = elements[i]
+          if (element.checked) {
+            const list = alignMap[element.id]
+            constraints = constraints.concat(list)
+          }
+        }
+
+				image.setConstraint(constraints)
 			}
 
 			function updatePosition() {
 
 				let x = document.getElementById("position-x").value
-				let y = document.getElementById("position-y").value
-
-				var pos = image.position
-				pos.x = x / 100.0
-				pos.y = y / 100.0
-				image.position = pos
+        image.setScale(x, x)
 			}
 
 			function resetPosition() {
-				document.getElementById("position-x").value = 0
-				document.getElementById("position-y").value = 0
+				document.getElementById("position-x").value = 1
+        const rotElement = document.getElementById("position-z")
+        rotElement.value = 0
+        updateZ(rotElement)
 				updatePosition()
 			}
 
 			function updateZ(element) {
-				image.zOrder = element.value
-			}
+				image.rotation = degrees_to_radians(element.value)
+      }
+      
+      function degrees_to_radians(degrees) {
+        var pi = Math.PI;
+        return degrees * (pi / 180.0);
+      }
 
+      function updateAlignSelector() {
+
+        var activeList = []
+
+        const fw = document.getElementById("width")
+        const fh = document.getElementById("height")
+
+        const offsetx = document.getElementById("offsetx")
+        offsetx.disabled = fw.checked
+        offsetx.value = 0
+
+        const offsety = document.getElementById("offsety")
+        offsety.disabled = fh.checked
+        offsety.value = 0
+
+        if (fw.checked && !fh.checked) {
+          activeList = activeList.concat(enableMap[fw.id])
+        }
+
+        if (!fw.checked && fh.checked) {
+          activeList = activeList.concat(enableMap[fh.id])
+        }
+
+        const activeAll = !fw.checked && !fh.checked
+
+        const elements = document.getElementsByName("align")
+        for (var i = 0; i < elements.length; i++) {
+          let element = elements[i]
+          
+          if (activeAll || activeList.includes(element.id)) {
+            element.disabled = false
+          } else {
+            element.disabled = true
+            element.checked = false
+          }
+        }
+      }
+  
 		</script>
 	</body>
 </html>
